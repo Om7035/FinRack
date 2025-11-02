@@ -1,51 +1,41 @@
-"""Bank Account models"""
-
+"""Bank account models"""
+import uuid
 from datetime import datetime
-from uuid import uuid4
-from sqlalchemy import Boolean, Column, DateTime, String, Numeric, ForeignKey, Index
+from sqlalchemy import Boolean, Column, DateTime, String, Numeric, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.database import Base
 
 
 class BankAccount(Base):
-    """Bank account model linked to Plaid"""
-    
+    """Bank account model"""
     __tablename__ = "bank_accounts"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
-    # Plaid Integration
-    plaid_account_id = Column(String(255), unique=True, index=True, nullable=False)
-    plaid_access_token = Column(String(255), nullable=False)  # Encrypted in production
-    plaid_item_id = Column(String(255), nullable=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
-    # Account Information
+    # Plaid integration
+    plaid_account_id = Column(String(255), unique=True, nullable=False, index=True)
+    plaid_access_token = Column(String(255), nullable=False)
+    plaid_item_id = Column(String(255), nullable=False)
+    
+    # Account details
     name = Column(String(255), nullable=False)
     official_name = Column(String(255), nullable=True)
     account_type = Column(String(50), nullable=False)  # checking, savings, credit, investment
     account_subtype = Column(String(50), nullable=True)
-    mask = Column(String(10), nullable=True)  # Last 4 digits
     
-    # Balance Information
-    current_balance = Column(Numeric(15, 2), default=0.00, nullable=False)
-    available_balance = Column(Numeric(15, 2), nullable=True)
-    limit_amount = Column(Numeric(15, 2), nullable=True)  # For credit cards
+    # Balance
+    current_balance = Column(Numeric(15, 2), default=0, nullable=False)
+    available_balance = Column(Numeric(15, 2), default=0, nullable=False)
     currency = Column(String(3), default="USD", nullable=False)
     
-    # Institution Information
-    institution_id = Column(String(255), nullable=True)
-    institution_name = Column(String(255), nullable=True)
+    # Mask (last 4 digits)
+    mask = Column(String(4), nullable=True)
     
     # Status
     is_active = Column(Boolean, default=True, nullable=False)
-    is_manual = Column(Boolean, default=False, nullable=False)  # Manually added account
-    
-    # Sync Information
-    last_synced_at = Column(DateTime, nullable=True)
-    sync_status = Column(String(50), default="pending", nullable=False)  # pending, syncing, success, error
-    sync_error = Column(String(500), nullable=True)
+    last_synced = Column(DateTime, nullable=True)
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -54,12 +44,3 @@ class BankAccount(Base):
     # Relationships
     user = relationship("User", back_populates="accounts")
     transactions = relationship("Transaction", back_populates="account", cascade="all, delete-orphan")
-
-    # Indexes
-    __table_args__ = (
-        Index("idx_user_accounts", "user_id", "is_active"),
-        Index("idx_plaid_account", "plaid_account_id"),
-    )
-
-    def __repr__(self):
-        return f"<BankAccount(id={self.id}, name={self.name}, type={self.account_type})>"

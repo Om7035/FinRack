@@ -1,5 +1,4 @@
 """Database models"""
-
 from app.models.users import User, Profile
 from app.models.accounts import BankAccount
 from app.models.transactions import Transaction

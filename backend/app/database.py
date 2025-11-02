@@ -1,19 +1,16 @@
 """Database configuration and session management"""
-
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.pool import NullPool
 from app.config import settings
 
 # Create async engine
 engine = create_async_engine(
-    settings.async_database_url,
+    settings.DATABASE_URL,
     echo=settings.DEBUG,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
     pool_pre_ping=True,
-    poolclass=NullPool if settings.APP_ENV == "test" else None,
+    pool_size=10,
+    max_overflow=20,
 )
 
 # Create async session factory
@@ -33,10 +30,8 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency for getting async database sessions.
     
-    Usage:
-        @app.get("/items")
-        async def read_items(db: AsyncSession = Depends(get_db)):
-            ...
+    Yields:
+        AsyncSession: Database session
     """
     async with AsyncSessionLocal() as session:
         try:

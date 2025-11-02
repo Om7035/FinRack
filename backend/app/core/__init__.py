@@ -1,1 +1,1 @@
-"""Core utilities and security"""
+"""Core utilities"""
