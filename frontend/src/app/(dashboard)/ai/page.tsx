@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { io, Socket } from 'socket.io-client'
 
 type Message = { id: string; role: 'user' | 'assistant' | 'system'; content: string };
 
@@ -9,24 +8,33 @@ export default function AIChatPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [connected, setConnected] = useState(false)
-  const socketRef = useRef<Socket | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
-    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000', { path: '/ws/socket.io' })
-    socketRef.current = socket
-    socket.on('connect', () => setConnected(true))
-    socket.on('disconnect', () => setConnected(false))
-    socket.on('ai_response', (payload: any) => {
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: payload.content }])
-    })
-    return () => { socket.disconnect() }
+    const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+    const url = base.replace('http', 'ws') + `/ws?token=${encodeURIComponent(token || '')}`
+    const ws = new WebSocket(url)
+    wsRef.current = ws
+    ws.onopen = () => setConnected(true)
+    ws.onclose = () => setConnected(false)
+    ws.onmessage = (ev) => {
+      try {
+        const data = JSON.parse(ev.data)
+        const content = typeof data === 'string' ? data : data.message || data.content || ev.data
+        setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: String(content) }])
+      } catch {
+        setMessages(prev => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: String(ev.data) }])
+      }
+    }
+    return () => { ws.close() }
   }, [])
 
   const send = () => {
     if (!input.trim()) return
     const msg: Message = { id: crypto.randomUUID(), role: 'user', content: input.trim() }
     setMessages((prev) => [...prev, msg])
-    socketRef.current?.emit('ai_message', { content: msg.content })
+    wsRef.current?.send(msg.content)
     setInput('')
   }
 
