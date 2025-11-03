@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import init_db, close_db
-from app.api import auth, accounts, transactions, budgets, goals, websocket
+from app.api import auth, accounts, transactions, budgets, goals, websocket, agents
 
 
 @asynccontextmanager
@@ -41,6 +41,7 @@ app.include_router(transactions.router)
 app.include_router(budgets.router)
 app.include_router(goals.router)
 app.include_router(websocket.router)
+app.include_router(agents.router)
 
 
 @app.get("/")
