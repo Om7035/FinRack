@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import init_db, close_db
-from app.api import auth, accounts, transactions, budgets, goals, websocket, agents, ocr
+from app.api import auth, accounts, transactions, budgets, goals, websocket, agents, ocr, analytics, subscriptions
 
 
 @asynccontextmanager
@@ -43,6 +43,8 @@ app.include_router(goals.router)
 app.include_router(websocket.router)
 app.include_router(agents.router)
 app.include_router(ocr.router)
+app.include_router(analytics.router)
+app.include_router(subscriptions.router)
 
 
 @app.get("/")
