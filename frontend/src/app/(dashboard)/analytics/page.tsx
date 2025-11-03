@@ -1,8 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import api from '@/lib/api'
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts'
+const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false }) as any
+const LineChart = dynamic(() => import('recharts').then(m => m.LineChart), { ssr: false }) as any
+const Line = dynamic(() => import('recharts').then(m => m.Line), { ssr: false }) as any
+const XAxis = dynamic(() => import('recharts').then(m => m.XAxis), { ssr: false }) as any
+const YAxis = dynamic(() => import('recharts').then(m => m.YAxis), { ssr: false }) as any
+const Tooltip = dynamic(() => import('recharts').then(m => m.Tooltip), { ssr: false }) as any
+const BarChart = dynamic(() => import('recharts').then(m => m.BarChart), { ssr: false }) as any
+const Bar = dynamic(() => import('recharts').then(m => m.Bar), { ssr: false }) as any
 
 export default function AnalyticsPage() {
   const [trend, setTrend] = useState<any[]>([])

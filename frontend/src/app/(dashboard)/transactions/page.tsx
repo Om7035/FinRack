@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable } from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import api from '@/lib/api'
 
 type Tx = { id: string; date: string; merchant: string; amount: number; category: string };
@@ -45,6 +46,14 @@ export default function TransactionsPage() {
     getPaginationRowModel: getPaginationRowModel(),
   })
 
+  const tableContainerRef = useRef<HTMLDivElement | null>(null)
+  const rowVirtualizer = useVirtualizer({
+    count: table.getRowModel().rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 44,
+    overscan: 10,
+  })
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
@@ -56,8 +65,8 @@ export default function TransactionsPage() {
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-lg border" ref={tableContainerRef} style={{ maxHeight: 480, overflow: 'auto' }}>
+        <table className="w-full text-sm" style={{ position: 'relative' }}>
           <thead className="bg-muted/50">
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
@@ -75,15 +84,30 @@ export default function TransactionsPage() {
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map(row => (
-              <tr key={row.id} className="border-t hover:bg-accent/40 cursor-pointer" onClick={() => setSelected(row.original)}>
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id} className="px-3 py-2">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
-              </tr>
-            ))}
+            <tr>
+              <td colSpan={columns.length} style={{ height: rowVirtualizer.getTotalSize() }}>
+                <div style={{ position: 'relative' }}>
+                  {rowVirtualizer.getVirtualItems().map(v => {
+                    const row = table.getRowModel().rows[v.index]
+                    return (
+                      <div key={row.id} style={{ position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${v.start}px)` }}>
+                        <table className="w-full text-sm">
+                          <tbody>
+                            <tr className="border-t hover:bg-accent/40 cursor-pointer" onClick={() => setSelected(row.original)}>
+                              {row.getVisibleCells().map(cell => (
+                                <td key={cell.id} className="px-3 py-2">
+                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </td>
+                              ))}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  })}
+                </div>
+              </td>
+            </tr>
             {table.getRowModel().rows.length === 0 && (
               <tr>
                 <td colSpan={columns.length} className="px-3 py-6 text-center text-muted-foreground">No transactions</td>
